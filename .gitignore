@@ -1,0 +1,15 @@
+*.pyc
+*.pyc*
+*.swp
+*.log
+*.orig
+*.orig*
+*.yml*
+*.dump*
+*settings_local.py
+*settings_l.py
+media/**
+venv/*
+utils/*
+log/*
+run/*

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<a href="/recent_matches">Recent matches</a>
+{% for t in tournaments %}
+<p><a href="{{ t.get_absolute_url }}">{{ t.title }}</a> ({{ t.association }})</p>
+{% endfor %}
+
+{% endblock %}

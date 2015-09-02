@@ -1,0 +1,11 @@
+requests
+Django==1.6.2
+django-jsonfield
+jsonfield
+selenium
+BeautifulSoup
+numpy
+scikit-learn
+scipy
+
+

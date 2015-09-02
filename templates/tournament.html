@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block content %}
+
+{% for m in matches %}
+<p><a href="{{ m.get_absolute_url }}">{{ m.getTitle }}</a> ({{ m.player0.countMatches}}) - ({{ m.player1.countMatches}}) </p>
+{% endfor %}
+
+{% endblock %}

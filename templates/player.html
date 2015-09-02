@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<H1>{{ player.name }}</H1>
+
+
+{% for k,v in player.serveStats.items %}
+<p>{{ k }} {{v}}</p>
+{% endfor %}
+
+<hr>
+{% for k,v in player.receiveStats.items %}
+<p>{{ k }} {{v}}</p>
+{% endfor %}
+
+{% endblock %}

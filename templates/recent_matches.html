@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block content %}
+
+
+<table cellpadding=5 cellspacing=0 border=0>
+
+<tr>
+<td width=80% valign=top>
+<table cellpadding=5 cellspacing=0 style="border: 1px solid #000">
+<tr>
+<th>Association</th>
+<th>Match</th>
+<th>Surface</th>
+<th>Odd1</th>
+<th>Odd2</th>
+<th>Bet on</th>
+<th>Winner</th>
+<th>Points</th>
+</tr>
+{% for m in matches %}
+<tr class="border_bottom">
+
+<td>
+{% if m.tournament.association == 0 %}
+ATP
+{% else %}
+{% if m.tournament.association == 1 %}
+WTA
+{% else %}
+{% if m.tournament.association == 2 %}
+ITF {% if m.tournament.gender == 0 %} (Men) {% else %} (Women) {% endif %}
+{% endif %}
+{% endif %}
+
+{% endif %}
+</td>
+
+<td>
+{{m.player0.country.title}}{% if m.player0.rank %} (ranked: {{m.player0.rank}}) {% endif %}
+<a href="{{ m.get_absolute_url }}">{{ m.getTitle }}</a> 
+{{m.player1.country.title}}{% if m.player1.rank %} (ranked: {{m.player1.rank}}) {% endif %}
+
+</td>
+<td bgcolor="{{ m.get_surface_color }}">{{ m.get_surface_title }}</td>
+<td>{{ m.player0_odd| floatformat:2 }}</td>
+<td>{{ m.player1_odd| floatformat:2 }}</td>
+
+
+<td>{{ m.bet_on }}
+{% if m.bet.odd %}
+@{{ m.bet.odd  | floatformat:2}}
+{% endif %}
+
+
+</td>
+<td>
+{% if m.winner_id %}
+
+{% if m.winner_id == m.player0_id %}
+{{m.player0.name}}
+{% endif %}
+
+{% if m.winner_id == m.player1_id %}
+{{m.player1.name}}
+{% endif %}
+
+{% else %}
+
+{% if m.bet.status == 4 %}
+Void
+{% else %}
+&nbsp;
+{% endif %}
+
+
+{% endif %}
+
+</td>
+
+<td>
+{% if m.won %}
+{% if m.won > 0 %}
+<b style="color: green;">+{{ m.won | floatformat:2 }}</b>
+{% else %}
+<b style="color: red;">{{ m.won }}</b>
+{% endif %}
+
+{% else %}
+
+{% if m.bet.status == 4 %}
+<b style="color: blue;">0</b>
+{% else %}
+&nbsp;
+{% endif %}
+
+{% endif %}
+</td>
+</tr>
+{% endfor %}
+<tr>
+<td colspan=200 align="right">Total: 
+{% if result > 0 %}
+<b style="color: green;">{{ result }}</b>
+{% else %}
+<b style="color: red;">{{ result }}</b>
+{% endif %}
+</td>
+</tr>
+</table>
+
+</td>
+<td valign=top width=20%>
+
+Total income: {{ total| floatformat:4 }}
+{% for d in daily %}
+<p>{{ d.date| date:"M/d" }} : {% if d.total >= 0 %}<font color="green">{% else %}<font color="red">{% endif %}<b>{{ d.total  | floatformat:3  }}</b></font></p>
+{% endfor %}
+</td>
+</tr>
+</table>
+{% endblock %}

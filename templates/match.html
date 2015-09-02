@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{match.tournament.title}}: {{match.getTitle}}{% endblock %}
+
+{% block bodycolor %}{{match.get_surface_color}}{% endblock %}
+{% block content %}
+
+{{ match.player0.name }} - {{ match.player1.name }}
+<p>{{match.get_surface_title}}</p>
+<p>{{match.tournament.title}}</p>
+{% for set in match.sets.all %}
+<p>Set {{ set.number }}</p>
+{% for game in set.games.all %}
+<p>Game {{ game.number }} {{ game.server.name }} {{ game.getTennisPoints }} {% if game.finished %}<b>{{ game.getScore }}</b> {% if game.isBreak %}[BP]{% endif %} {% endif %}</p>
+{% endfor %}
+
+{% endfor %}
+
+{% endblock %}
