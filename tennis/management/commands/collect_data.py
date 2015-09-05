@@ -528,8 +528,17 @@ def extract_tournaments_and_matches(html):
         elif title.find("Women's French Open") >= 0:
             assoc = AssociationType.WTA
             gender = Gender.FEMALE
+
+        elif title.find("Men's US Open") >= 0:
+            assoc = AssociationType.ATP
+            gender = Gender.MALE
+            
+        elif title.find("Women's US Open") >= 0:
+            assoc = AssociationType.WTA
+            gender = Gender.FEMALE
+
         else:
-            print "Unknown liga:", title
+            print "Unknown league:", title
             continue
 
         tournament, created = Tournament.objects.get_or_create(
