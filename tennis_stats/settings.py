@@ -108,3 +108,6 @@ ATP_EVENTS_URL = "http://www.atpworldtour.com/Scores/Archive-Event-Calendar.aspx
 ITF_MEN_CALENDAR = "http://www.itftennis.com/procircuit/tournaments/men's-calendar.aspx?"
 ITF_WOMEN_CALENDAR = "http://www.itftennis.com/procircuit/tournaments/women's-calendar.aspx?"
 PHANTOM_BIN = '/opt/bin/phantomjs'
+
+DATADIR_SUCCES_BASE = "/opt/test_data/matches"
+DATADIR_ERROR_BASE = "/opt/test_data/errors"

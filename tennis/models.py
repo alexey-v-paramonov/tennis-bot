@@ -1,5 +1,6 @@
 # coding=utf-8
 import re
+import math
 import requests
 import BeautifulSoup
 from fractions import Fraction
@@ -766,7 +767,7 @@ class Match(models.Model):
             match=self,
             selection=BetSelection.MATCH_WINNER
         ).exists()
-
+        
         if not bet_exists and self.tournament.surface != SurfaceType.UNK:
             t = self.getTitle()
             target_surfaces = HARDS
@@ -785,6 +786,8 @@ class Match(models.Model):
 
             d1 = self.winner_data1_surface
             d2 = self.winner_data2_surface
+            d1['rank'] = self.player0_rank
+            d2['rank'] = self.player1_rank
 
             d1_s = self.winner_data1_surface_size
             d2_s = self.winner_data2_surface_size
@@ -818,6 +821,9 @@ class Match(models.Model):
                 for m2 in matches2:
                     dd1 = m2.winner_data1_surface
                     dd2 = m2.winner_data2_surface
+                    dd1['rank'] = m2.player0_rank
+                    dd2['rank'] = m2.player1_rank
+                        
                     trainX.append(preprocessing.scale(getX(dd1, dd2)))
                     trainY.append(int(m2.winner == m2.player0),)
                 print "TrainX0: ", trainX[0]
@@ -1409,6 +1415,12 @@ def getX(d1, d2):
     r_loses_to_30 = d1['receive_stats'].get('40-30', 0) - d2['receive_stats'].get('40-30', 0)
     r_loses_to_deuce = d1['receive_stats'].get('A-40', 0) - d2['receive_stats'].get('A-40', 0)
 
+    #Rank
+    if d1['rank'] > 0 and d2['rank'] > 0:
+        rank = 1./math.log(1+d1['rank'], 10000) - 1./math.log(1+d2['rank'], 10000)
+    else:
+        rank = 0
+
     data = (
         to_love_points,
         to_odd_points,
@@ -1425,7 +1437,8 @@ def getX(d1, d2):
         r_loses_to_love,
         r_loses_to_15,
         r_loses_to_30,
-        r_loses_to_deuce
+        r_loses_to_deuce,
+        rank
     )
 
     return data
