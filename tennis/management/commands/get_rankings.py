@@ -39,6 +39,11 @@ def import_data(base_url):
                     'rank': pos,
                     'points': points
                 }
+                data[name.lower().replace('-', ' ')] = {
+                    'rank': pos,
+                    'points': points
+                }
+                
                 # print name, pos, points
     return data
 
