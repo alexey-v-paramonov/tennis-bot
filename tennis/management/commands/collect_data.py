@@ -26,6 +26,7 @@ from tennis.models import (
     Game,
     Point,
     Gender,
+    SurfaceType,
     HARDS,
     CLAYS,
     GRASS
@@ -548,7 +549,7 @@ def extract_tournaments_and_matches(html):
             qualifying=qualifying
         )
 
-        if created:
+        if created or tournament.surface == SurfaceType.UNK:
             tournament.load_surface()
 
         matches_table = competition.find('table')
