@@ -1,7 +1,7 @@
 # Django settings for tennis_stats project.
 import os
 
-DEBUG = True
+DEBUG = False
 from settings_local import *
 
 

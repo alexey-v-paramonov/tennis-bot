@@ -598,6 +598,7 @@ class Tournament(models.Model):
                 search_url = settings.ITF_WOMEN_CALENDAR
 
             url = search_url + urllib.urlencode(data)
+            print url
             try:
                 driver = webdriver.PhantomJS(
                     executable_path=settings.PHANTOM_BIN
