@@ -27,6 +27,7 @@ from sklearn import preprocessing
 
 MIN_ODD_CUTOFF = 1.33
 MAX_ODD_CUTOFF = 4.0
+GAMES_STATS_PERIOD = 600
 
 
 class AssociationType(object):
@@ -171,11 +172,11 @@ class Player(models.Model):
             f &= Q(set__match__start_ts__lt=up_to_date)
             s = up_to_date
 
-        f &= Q(set__match__start_ts__gt=s - datetime.timedelta(days=365))
+        f &= Q(set__match__start_ts__gt=s - datetime.timedelta(days=GAMES_STATS_PERIOD))
         if surfaces:
             f &= Q(set__match__tournament__surface__in=surfaces)
 
-        games = Game.objects.filter(f).order_by('-id').all()
+        games = Game.objects.filter(f).order_by('-id').all().prefetch_related('points')
         histogram = {}
         for g in games:
             points = g.getTennisPoints()
@@ -194,7 +195,7 @@ class Player(models.Model):
         for k, v in histogram.items():
             p = float(v)/float(tot)*100.
             histogram[k] = p
-        return histogram
+        return histogram, tot
 
     def receiveStats(self, up_to_date=None, surfaces=None):
         f = Q(receiver=self, finished=True)
@@ -205,8 +206,8 @@ class Player(models.Model):
             s = up_to_date
         if surfaces:
             f &= Q(set__match__tournament__surface__in=surfaces)
-        f &= Q(set__match__start_ts__gt=s - datetime.timedelta(days=365))
-        games = Game.objects.filter(f).order_by('-id').all()
+        f &= Q(set__match__start_ts__gt=s - datetime.timedelta(days=GAMES_STATS_PERIOD))
+        games = Game.objects.filter(f).order_by('-id').all().prefetch_related('points')
         histogram = {}
         bp_won = 0
         bp_total = 0
@@ -230,21 +231,21 @@ class Player(models.Model):
         tot = len(games)
         ret = []
         for k, v in histogram.items():
-            p = float(v)/float(tot)*100.
+            p = (float(v)/float(tot))*100.
             histogram[k] = p
 
-	#print bp_won, " of ", bp_total, round(float(bp_won)/float(bp_total)*100, 2)
 	bp_percent = 0
 	if bp_total > 0:
 	    bp_percent = round((float(bp_won)/float(bp_total))*100, 2)
 	    
-        return histogram, bp_percent
+        return histogram, bp_percent, tot
 
     def get_winner_data(self, up_to_date=None, surfaces=None):
         ret = {}
-        ret['num_games'] = self.countGames(up_to_date, surfaces)
-        ret['point_stats'] = self.serveStats(up_to_date, surfaces)
-        ret['receive_stats'], ret['bp_won'] = self.receiveStats(up_to_date, surfaces)
+        #ret['num_games'] = self.countGames(up_to_date, surfaces)
+        ret['point_stats'], s_games = self.serveStats(up_to_date, surfaces)
+        ret['receive_stats'], ret['bp_won'], r_games = self.receiveStats(up_to_date, surfaces)
+        ret['num_games'] = s_games + r_games
         return ret
 
     def getName(self):
@@ -267,7 +268,7 @@ class Player(models.Model):
         if surfaces:
             f &= Q(set__match__tournament__surface__in=surfaces)
 
-        f &= Q(set__match__start_ts__gt=s - datetime.timedelta(days=365))
+        f &= Q(set__match__start_ts__gt=s - datetime.timedelta(days=GAMES_STATS_PERIOD))
 
         return Game.objects.filter(f).count()
 
