@@ -205,14 +205,21 @@ class Player(models.Model):
             s = up_to_date
         if surfaces:
             f &= Q(set__match__tournament__surface__in=surfaces)
-
         f &= Q(set__match__start_ts__gt=s - datetime.timedelta(days=365))
         games = Game.objects.filter(f).order_by('-id').all()
         histogram = {}
+        bp_won = 0
+        bp_total = 0
         for g in games:
-            points = g.getTennisPoints()
+            points, breakpoints = g.getTennisPoints(with_breaks=True)
             if not len(points):
                 continue
+            broke = g.winner and g.receiver and g.winner.pk == g.receiver.pk
+            if broke:
+                bp_won += 1
+                breakpoints -= 1
+            bp_total += breakpoints
+            
             result = points[-1]
             key = u"{0}-{1}".format(result[0], result[1])
             try:
@@ -225,13 +232,19 @@ class Player(models.Model):
         for k, v in histogram.items():
             p = float(v)/float(tot)*100.
             histogram[k] = p
-        return histogram
+
+	#print bp_won, " of ", bp_total, round(float(bp_won)/float(bp_total)*100, 2)
+	bp_percent = 0
+	if bp_total > 0:
+	    bp_percent = round((float(bp_won)/float(bp_total))*100, 2)
+	    
+        return histogram, bp_percent
 
     def get_winner_data(self, up_to_date=None, surfaces=None):
         ret = {}
         ret['num_games'] = self.countGames(up_to_date, surfaces)
         ret['point_stats'] = self.serveStats(up_to_date, surfaces)
-        ret['receive_stats'] = self.receiveStats(up_to_date, surfaces)
+        ret['receive_stats'], ret['bp_won'] = self.receiveStats(up_to_date, surfaces)
         return ret
 
     def getName(self):
@@ -247,10 +260,14 @@ class Player(models.Model):
 
     def countGames(self, up_to_date=None, surfaces=None):
         f = Q(server=self) | Q(receiver=self)
+        s = datetime.datetime.now()
         if up_to_date:
             f &= Q(set__match__start_ts__lt=up_to_date)
+            s = up_to_date
         if surfaces:
             f &= Q(set__match__tournament__surface__in=surfaces)
+
+        f &= Q(set__match__start_ts__gt=s - datetime.timedelta(days=365))
 
         return Game.objects.filter(f).count()
 
@@ -1223,11 +1240,12 @@ class Game(models.Model):
     def getScore(self):
         return self.set.getScore(self)
 
-    def getTennisPoints(self):
+    def getTennisPoints(self, with_breaks=False):
 
         p1_sum = 0
         p2_sum = 0
         ret = []
+        breakpoints = 0
 
         if self.number == 13:
             for p in self.points.all():
@@ -1236,13 +1254,18 @@ class Game(models.Model):
                 p2_sum += int(not from_serve)
 
                 ret.append([p1_sum, p2_sum])
-            return ret
+            if with_breaks:
+                return ret, 0
+            else:
+                return ret
         else:
             for p in self.points.all():
                 from_serve = p.player == self.server
                 p1_sum += int(from_serve)
                 p2_sum += int(not from_serve)
-
+                is_breakpoint = p2_sum >= 3 and p2_sum > p1_sum
+                if is_breakpoint and not from_serve:
+                    breakpoints += 1
                 if (p1_sum + p2_sum) >= 7:
                     s1 = p1_sum
                     s2 = p2_sum
@@ -1258,8 +1281,10 @@ class Game(models.Model):
                     settings.TENNIS_POINTS[p1_sum],
                     settings.TENNIS_POINTS[p2_sum]
                 ])
-
-            return ret[:-1]
+            if with_breaks:
+                return ret[:-1], breakpoints
+            else:
+                return ret[:-1]
 
     class Meta:
         unique_together = [
@@ -1285,8 +1310,23 @@ class Point(models.Model):
 
 
 class BetSerie(models.Model):
-    pass
+    
+    step = models.PositiveIntegerField(default=1)
+    finished = models.BooleanField(default=False)
+    bet = models.ForeignKey('Bet', related_name="series", null=True)
+    summ = models.FloatField(default=0., null=True)
+    start_ts = models.DateTimeField(
+        _("Started on"),
+        auto_now_add=True,
+        null=True
+    )
+    
+    stake = models.FloatField(default=0., null=True)
 
+    def finish(self):
+        self.finished = True
+        self.save()
+    
 
 class BetSelection:
 
@@ -1307,12 +1347,14 @@ class BetStatus:
     LOST = 3
     RETURN = 4
     NOT_FOUND = 5
-
+    PROCESSED = 6
+    
     choices = (
         (SET, 'Set'),
         (WON, 'Won'),
         (LOST, 'Lost'),
         (RETURN, 'Return'),
+        (PROCESSED, 'Processed'),
     )
 
 
@@ -1373,6 +1415,9 @@ class Bet(models.Model):
     def isLost(self):
         return self.match.winner and (self.winner != self.match.winner)
 
+    def isVoid(self):
+        return self.status == BetStatus.RETURN
+    
     def setLost(self):
         self.status = BetStatus.LOST
         self.save()
@@ -1385,6 +1430,10 @@ class Bet(models.Model):
         self.status = BetStatus.RETURN
         self.save()
 
+    def setProcessed(self):
+        self.status = BetStatus.PROCESSED
+        self.save()
+        
     class Meta:
 
         unique_together = (
@@ -1422,6 +1471,11 @@ def getX(d1, d2):
     else:
         rank = 0
 
+    # BP
+    bp_won = 0
+    if d1.get('bp_won', 0) > 0 and d2.get('bp_won',0) > 0:
+        bp_won = d1['bp_won'] - d2['bp_won']
+
     data = (
         to_love_points,
         to_odd_points,
@@ -1439,7 +1493,8 @@ def getX(d1, d2):
         r_loses_to_15,
         r_loses_to_30,
         r_loses_to_deuce,
-        rank
+        rank,
+        bp_won
     )
 
     return data
