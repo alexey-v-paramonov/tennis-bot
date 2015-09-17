@@ -205,13 +205,13 @@ def loadMatchData(xml, tournament_pk, match_pk):
                 match.player0_points = players_ids[0].points
                 match.player1_points = players_ids[1].points
 
-                if match.signles:
+                if match.singles:
                     if match.player0_rank == 0:
                         match.player0_rank = players_ids[0].getCurrentRank()
                         print "Player {0} rank loaded successfully: {1}".format(n1, match.player0_rank)
                     
 
-                    if match.signles and match.player1_rank == 0:
+                    if match.player1_rank == 0:
                         match.player0_rank = players_ids[0].getCurrentRank()
                         print "Player {0} rank loaded successfully: {1}".format(n1, match.player0_rank)
                     

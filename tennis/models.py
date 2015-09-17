@@ -302,7 +302,7 @@ class Player(models.Model):
                         
                         if t.find("Current Singles Ranking") >= 0:
                             try:
-                                return tds[1].text
+                                return tds[1].text.replace('=', '')
                             except:
                                 pass
                             
