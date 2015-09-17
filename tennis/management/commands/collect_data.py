@@ -50,7 +50,7 @@ game_win_re = re.compile(
 )
 itf_gender_re = re.compile("^F\d+$")
 
-
+  
 class Message:
     def __init__(self, m):
         self.id = int(m.get('id'))
@@ -204,6 +204,16 @@ def loadMatchData(xml, tournament_pk, match_pk):
 
                 match.player0_points = players_ids[0].points
                 match.player1_points = players_ids[1].points
+
+                if match.player0_rank == 0:
+                    match.player0_rank = players_ids[0].getCurrentRank()
+                    print "Player {0} rank loaded successfully: {1}".format(n1, match.player0_rank)
+                    
+
+                if match.player1_rank == 0:
+                    match.player0_rank = players_ids[0].getCurrentRank()
+                    print "Player {0} rank loaded successfully: {1}".format(n1, match.player0_rank)
+                    
                 match.save()
 
             if (not match.player0_odd or not match.player1_odd):
@@ -675,7 +685,7 @@ class Command(BaseCommand):
             print "Fetching matches..."
             loaded = False
             try:
-                driver = webdriver.PhantomJS(executable_path='/opt/bin/phantomjs')
+                driver = webdriver.PhantomJS(executable_path=settings.PHANTOM_BIN)
                 # r = requests.get(settings.TENNIS_URL, headers=headers)
                 driver.get(settings.TENNIS_URL)
                 source = driver.page_source

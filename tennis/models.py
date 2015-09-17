@@ -8,7 +8,7 @@ import jsonfield
 import urllib
 from selenium import webdriver
 import datetime
-
+import json as core_json
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -234,15 +234,14 @@ class Player(models.Model):
             p = (float(v)/float(tot))*100.
             histogram[k] = p
 
-	bp_percent = 0
+        bp_percent = 0
 	if bp_total > 0:
 	    bp_percent = round((float(bp_won)/float(bp_total))*100, 2)
-	    
+
         return histogram, bp_percent, tot
 
     def get_winner_data(self, up_to_date=None, surfaces=None):
         ret = {}
-        #ret['num_games'] = self.countGames(up_to_date, surfaces)
         ret['point_stats'], s_games = self.serveStats(up_to_date, surfaces)
         ret['receive_stats'], ret['bp_won'], r_games = self.receiveStats(up_to_date, surfaces)
         ret['num_games'] = s_games + r_games
@@ -251,6 +250,64 @@ class Player(models.Model):
     def getName(self):
         return self.name
 
+    def getPage(self):
+        searchfor = 'itftennis.com: {0}'.format(self.getName())
+        query = urllib.urlencode({'q': searchfor})
+        url = 'http://ajax.googleapis.com/ajax/services/search/web?v=1.0&%s' % query
+        search_response = urllib.urlopen(url)
+        search_results = search_response.read()
+        results = core_json.loads(search_results)
+        data = results['responseData']
+        if data['cursor']['estimatedResultCount'] > 0:
+            hits = data['results']
+
+            # search for pro profile
+            for h in hits:
+                if h['url'].find('procircuit/players/player/profile.aspx') > 0:
+                    return urllib.unquote(h['url'])
+
+            # search for junior profile
+            for h in hits:
+                if h['url'].find('juniors/players/player/profile.aspx') > 0:
+                    return urllib.unquote(h['url'])
+
+        return False
+    
+    def getCurrentRank(self):
+        url = self.getPage()
+        print url
+        loaded = False
+        try:
+            driver = webdriver.PhantomJS(executable_path=settings.PHANTOM_BIN)
+            driver.get(url)
+            source = driver.page_source
+            loaded = True
+        except:
+            print "Unable to fetch ", url
+        finally:
+            driver.close()
+            driver.quit()
+
+        if loaded:    
+            soup = BeautifulSoup.BeautifulSoup(source)
+            rows = soup.findAll('tr')
+            for r in rows:
+                tds = r.findAll('td')
+                if tds:
+                    for td in tds:
+                        try:
+                            t = td.text.strip()
+                        except:
+                            continue
+                        
+                        if t.find("Current Singles Ranking") >= 0:
+                            try:
+                                return tds[1].text
+                            except:
+                                pass
+                            
+        return 0
+        
     def countMatches(self, up_to_date=None, surfaces=None):
         f = Q(player1=self) | Q(player0=self)
         if up_to_date:
@@ -938,7 +995,7 @@ class Match(models.Model):
             return -1
 
     def getTitle(self):
-        return u"{0} - {1}".format(self.player0.name, self.player1.name)
+        return u"{0} ({2}) - {1} ({3})".format(self.player0.name, self.player1.name, self.player0_rank, self.player1_rank)
 
     def get_absolute_url(self):
         return u"/tournament/{0}/match/{1}".format(self.tournament.pk, self.pk)
@@ -1474,7 +1531,7 @@ def getX(d1, d2):
 
     # BP
     bp_won = 0
-    if d1.get('bp_won', 0) > 0 and d2.get('bp_won',0) > 0:
+    if d1.get('bp_won', 0) > 0 and d2.get('bp_won', 0) > 0:
         bp_won = d1['bp_won'] - d2['bp_won']
 
     data = (
@@ -1495,7 +1552,7 @@ def getX(d1, d2):
         r_loses_to_30,
         r_loses_to_deuce,
         rank,
-        bp_won
+        #bp_won
     )
 
     return data
