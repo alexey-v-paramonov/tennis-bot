@@ -212,7 +212,7 @@ def loadMatchData(xml, tournament_pk, match_pk):
                     
 
                     if match.player1_rank == 0:
-                        match.player0_rank = players_ids[0].getCurrentRank()
+                        match.player1_rank = players_ids[1].getCurrentRank()
                         print "Player {0} rank loaded successfully: {1}".format(n1, match.player0_rank)
                     
                 match.save()
