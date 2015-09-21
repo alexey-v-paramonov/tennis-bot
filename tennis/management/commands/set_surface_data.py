@@ -23,8 +23,8 @@ class Command(BaseCommand):
 
     @commit_on_success
     def handle(self, *args, **options):
-        ts = datetime.date(2015, 1, 1)
-        matches = Match.objects.filter(start_ts__gte=ts).order_by('start_ts')
+        ts = datetime.date(2015, 9, 19)
+        matches = Match.objects.filter(start_ts__gte=ts, tournament_id=3517).order_by('start_ts')
         c = 0
         for m in matches:
 

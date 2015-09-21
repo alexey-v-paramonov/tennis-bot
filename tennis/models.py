@@ -939,7 +939,8 @@ class Match(models.Model):
                     game=1,
                     odd=odd
                 )
-
+                if odd >= settings.NOTIFY_ODD_THRESHHOLD:
+            	    send_mail("{0} @ {1}".format(winner.getName(), odd), 'Good luck', 'info@tennis-bot.com', [settings.PLAYER_EMAIL], fail_silently=True)
             else:
                 print t, "To small player data, skip: ", d1_s, d2_s
 

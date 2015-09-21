@@ -694,9 +694,12 @@ class Command(BaseCommand):
             except:
                 print "Unable to fetch ", settings.TENNIS_URL
             finally:
-                driver.close()
-                driver.quit()
-
+        	try:
+            	    driver.close()
+            	    driver.quit()
+		except:
+		    pass
+		    
             if loaded:
                 extract_tournaments_and_matches(source)
             sleep_time = random.randint(settings.TIMEOUT, settings.TIMEOUT * 5)
