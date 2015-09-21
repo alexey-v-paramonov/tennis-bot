@@ -220,7 +220,7 @@ class Player(models.Model):
                 bp_won += 1
                 breakpoints -= 1
             bp_total += breakpoints
-            
+
             result = points[-1]
             key = u"{0}-{1}".format(result[0], result[1])
             try:
@@ -235,8 +235,8 @@ class Player(models.Model):
             histogram[k] = p
 
         bp_percent = 0
-	if bp_total > 0:
-	    bp_percent = round((float(bp_won)/float(bp_total))*100, 2)
+        if bp_total > 0:
+            bp_percent = round((float(bp_won)/float(bp_total))*100, 2)
 
         return histogram, bp_percent, tot
 
@@ -272,7 +272,7 @@ class Player(models.Model):
                     return urllib.unquote(h['url'])
 
         return False
-    
+
     def getCurrentRank(self):
         url = self.getPage()
         print url
@@ -288,7 +288,7 @@ class Player(models.Model):
             driver.close()
             driver.quit()
 
-        if loaded:    
+        if loaded:
             soup = BeautifulSoup.BeautifulSoup(source)
             rows = soup.findAll('tr')
             for r in rows:
@@ -299,15 +299,15 @@ class Player(models.Model):
                             t = td.text.strip()
                         except:
                             continue
-                        
+
                         if t.find("Current Singles Ranking") >= 0:
                             try:
                                 return tds[1].text.replace('=', '')
                             except:
                                 pass
-                            
+
         return 0
-        
+
     def countMatches(self, up_to_date=None, surfaces=None):
         f = Q(player1=self) | Q(player0=self)
         if up_to_date:
@@ -493,7 +493,20 @@ class Tournament(models.Model):
             else:
                 y = timezone.now().year
 
-            search_url = u"http://en.wikipedia.org/wiki/{0}_WTA_Tour".format(y)
+            searchfor = 'wtatennis.com: {0} surface'.format(title)
+            query = urllib.urlencode({'q': searchfor})
+            url = 'http://ajax.googleapis.com/ajax/services/search/web?v=1.0&%s' % query
+            search_response = urllib.urlopen(url)
+            search_results = search_response.read()
+            results = core_json.loads(search_results)
+            data = results['responseData']
+            if data['cursor']['estimatedResultCount'] > 0:
+                hits = data['results']
+                if hits:
+                    search_url = urllib.unquote(hits[0]['url'])
+                else:
+                    return False
+
             try:
                 r = requests.get(search_url)
             except:
@@ -501,19 +514,16 @@ class Tournament(models.Model):
 
             html = r.text.encode('utf-8')
             soup = BeautifulSoup.BeautifulSoup(html)
-            data = soup.find(
-                'td',
-                text=re.compile(title.lower().strip(), re.UNICODE)
+            surface_div = soup.find(
+                'div',
+                {'class': 'half-block last'}
             )
 
-            if not data:
+            if not surface_div:
                 return False
 
-            surf_data = None
             try:
-                surf_data = re.compile("– (.*?)– ")\
-                              .search(data.parent.parent.text.encode("utf-8"))\
-                              .groups()[0]
+                surf_data = surface_div.findAll('strong')[0].nextSibling.replace(':', '').strip()
             except:
                 pass
 
@@ -521,37 +531,7 @@ class Tournament(models.Model):
                 return False
 
             s = surf_data.lower()
-            t = self
-            if s.find('(i)') >= 0:
-                if s.find('hard') >= 0:
-                    t.surface = SurfaceType.IHARD
-                    t.save()
-                elif s.find('clay') >= 0:
-                    t.surface = SurfaceType.ICLAY
-                    t.save()
-                elif s.find('carpet') >= 0:
-                    t.surface = SurfaceType.ICARPET
-                    t.save()
-                elif s.find('grass') >= 0:
-                    t.surface = SurfaceType.IGRASS
-                    t.save()
-                else:
-                    print "Unknown WTA surface (indoor): ", s
-            else:
-                if s.find('hard') >= 0:
-                    t.surface = SurfaceType.HARD
-                    t.save()
-                elif s.find('clay') >= 0:
-                    t.surface = SurfaceType.CLAY
-                    t.save()
-                elif s.find('carpet') >= 0:
-                    t.surface = SurfaceType.CARPET
-                    t.save()
-                elif s.find('grass') >= 0:
-                    t.surface = SurfaceType.GRASS
-                    t.save()
-                else:
-                    print "Unknonw WTA surface (indoor): ", s
+            save_surf(surf_data)
 
         elif self.association == AssociationType.ATP:
 
@@ -843,7 +823,7 @@ class Match(models.Model):
             match=self,
             selection=BetSelection.MATCH_WINNER
         ).exists()
-        
+
         if not bet_exists and self.tournament.surface != SurfaceType.UNK:
             t = self.getTitle()
             target_surfaces = HARDS
@@ -899,7 +879,7 @@ class Match(models.Model):
                     dd2 = m2.winner_data2_surface
                     dd1['rank'] = m2.player0_rank
                     dd2['rank'] = m2.player1_rank
-                        
+
                     trainX.append(preprocessing.scale(getX(dd1, dd2)))
                     trainY.append(int(m2.winner == m2.player0),)
                 print "TrainX0: ", trainX[0]
@@ -940,7 +920,14 @@ class Match(models.Model):
                     odd=odd
                 )
                 if odd >= settings.NOTIFY_ODD_THRESHHOLD:
-            	    send_mail("{0} @ {1}".format(winner.getName(), odd), 'Good luck', 'info@tennis-bot.com', [settings.PLAYER_EMAIL], fail_silently=True)
+                    send_mail(
+                        "{0} @ {1}".format(winner.getName(), odd),
+                        'Good luck',
+                        'info@tennis-bot.com',
+                        [settings.PLAYER_EMAIL],
+                        fail_silently=True
+                    )
+
             else:
                 print t, "To small player data, skip: ", d1_s, d2_s
 
@@ -1369,7 +1356,7 @@ class Point(models.Model):
 
 
 class BetSerie(models.Model):
-    
+
     step = models.PositiveIntegerField(default=1)
     finished = models.BooleanField(default=False)
     bet = models.ForeignKey('Bet', related_name="series", null=True)
@@ -1379,13 +1366,13 @@ class BetSerie(models.Model):
         auto_now_add=True,
         null=True
     )
-    
+
     stake = models.FloatField(default=0., null=True)
 
     def finish(self):
         self.finished = True
         self.save()
-    
+
 
 class BetSelection:
 
@@ -1524,7 +1511,7 @@ def getX(d1, d2):
     r_loses_to_30 = d1['receive_stats'].get('40-30', 0) - d2['receive_stats'].get('40-30', 0)
     r_loses_to_deuce = d1['receive_stats'].get('A-40', 0) - d2['receive_stats'].get('A-40', 0)
 
-    #Rank
+    # Rank
     if d1['rank'] > 0 and d2['rank'] > 0:
         rank = 1./math.log(1+d1['rank'], 10000) - 1./math.log(1+d2['rank'], 10000)
     else:
@@ -1553,7 +1540,7 @@ def getX(d1, d2):
         r_loses_to_30,
         r_loses_to_deuce,
         rank,
-        #bp_won
+        # bp_won
     )
 
     return data
