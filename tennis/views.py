@@ -33,30 +33,6 @@ def tournament(request, tournament_pk):
         }
     )
 
-# def bet_won(request, bet_pk):
-
-#     bet = Bet.objects.get(pk=bet_pk)
-#     match = bet.match
-#     match.winner = bet.winner
-#     match.save()
-#     return redirect('recent_matches')
-
-# def bet_lost(request, bet_pk):
-
-#     bet = Bet.objects.get(pk=bet_pk)
-#     match = bet.match
-#     match.winner = match.player1
-#     if bet.winner == match.player0 else match.player0
-#     match.save()
-#     return redirect('recent_matches')
-
-# def bet_void(request, bet_pk):
-
-#     bet = Bet.objects.get(pk=bet_pk)
-#     bet.status = BetStatus.RETURN
-#     bet.save()
-#     return redirect('recent_matches')
-
 
 def recent_matches(request):
 
@@ -68,7 +44,8 @@ def recent_matches(request):
         'tournament',
         'player0',
         'player1',
-        'winner'
+        'winner',
+        'bets'
     ).order_by('-start_ts')
     result = 0
     for m in matches:
@@ -102,7 +79,7 @@ def recent_matches(request):
                 datetime.combine(date, time.min),
                 datetime.combine(date, time.max)
             )
-        ).order_by('-ts_created')
+        ).select_related('match').order_by('-ts_created')
         total = 0
         for b in bets:
             if b.isWon():
