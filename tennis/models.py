@@ -25,8 +25,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn import preprocessing
 
 
-MIN_ODD_CUTOFF = 1.33
-MAX_ODD_CUTOFF = 4.0
+MIN_ODD_CUTOFF = 1.2
+MAX_ODD_CUTOFF = 4.
 GAMES_STATS_PERIOD = 600
 
 
@@ -484,7 +484,7 @@ class Tournament(models.Model):
                 return t.replace('Doubles', '')\
                         .replace('Qualifying', '')\
                         .replace('WTA', '')\
-                        .replace(' - ', '')\
+                        .replace(' - ', ' ')\
                         .strip()
 
             title = patch_wta_title(self.title)
@@ -500,7 +500,7 @@ class Tournament(models.Model):
             search_results = search_response.read()
             results = core_json.loads(search_results)
             data = results['responseData']
-            if data['cursor']['estimatedResultCount'] > 0:
+            if data['cursor'].get('estimatedResultCount', 0) > 0:
                 hits = data['results']
                 if hits:
                     search_url = urllib.unquote(hits[0]['url'])

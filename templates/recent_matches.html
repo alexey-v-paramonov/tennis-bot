@@ -1,6 +1,18 @@
 {% extends 'base.html' %}
 {% block content %}
 
+<script>
+<!--
+function calc(){
+var summ = parseFloat(document.getElementById('in_summ').value);
+var odds = parseFloat(document.getElementById('in_odds').value);
+
+var r = document.getElementById('out_stake');
+r.value = Math.ceil(summ/Math.abs(1-odds) * 100) / 100;
+
+}
+-->
+</script>
 
 <table cellpadding=5 cellspacing=0 border=0>
 
@@ -13,6 +25,9 @@
 <th>Surface</th>
 <th>Odd1</th>
 <th>Odd2</th>
+<!--<th>Live Odd1</th>
+<th>Live Odd2</th>
+-->
 <th>Bet on</th>
 <th>Winner</th>
 <th>Points</th>
@@ -36,19 +51,27 @@ ITF {% if m.tournament.gender == 0 %} (Men) {% else %} (Women) {% endif %}
 </td>
 
 <td>
-{{m.player0.country.title}}{% if m.player0.rank %} (ranked: {{m.player0.rank}}) {% endif %}
+{{m.player0.country.title}}{% if m.player0_rank %} (ranked: {{m.player0_rank}}) {% endif %}
 <a href="{{ m.get_absolute_url }}">{{ m.getTitle }}</a> 
-{{m.player1.country.title}}{% if m.player1.rank %} (ranked: {{m.player1.rank}}) {% endif %}
+{{m.player1.country.title}}{% if m.player1_rank %} (ranked: {{m.player1_rank}}) {% endif %}
 
 </td>
 <td bgcolor="{{ m.get_surface_color }}">{{ m.get_surface_title }}</td>
 <td>{{ m.player0_odd| floatformat:2 }}</td>
 <td>{{ m.player1_odd| floatformat:2 }}</td>
 
+{% comment %}
+<td>{{ m.player0_max_live_odd| floatformat:2 }}</td>
+<td>{{ m.player1_max_live_odd| floatformat:2 }}</td>
+{% endcomment %}
 
 <td>{{ m.bet_on }}
 {% if m.bet.odd %}
 @{{ m.bet.odd  | floatformat:2}}
+{% comment %}
+
+({{ m.p1 }} :: {{ m.p2 }})
+{% endcomment %}
 {% endif %}
 
 
@@ -110,6 +133,22 @@ Void
 
 </td>
 <td valign=top width=20%>
+
+
+<table border=0>
+<tr>
+<td>Win</td><td><input id="in_summ" type=text name=income size=4></td>
+</tr>
+<tr>
+<td>Odd</td><td><input  id="in_odds" type=text name=odds size=2></td>
+</tr>
+<tr>
+<td>Stake</td><td><input id="out_stake"  type=text  name=stake  size=4></td>
+</tr>
+<tr>
+<td colspan=2 align=right><input type=button value="ok" onclick="calc()"></td>
+</tr>
+</table>
 
 Total income: {{ total| floatformat:4 }}
 {% for d in daily %}
